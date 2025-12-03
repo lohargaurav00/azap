@@ -1,0 +1,6 @@
+[package]
+name = 'azap_macros'
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

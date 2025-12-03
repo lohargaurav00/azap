@@ -1,0 +1,6 @@
+[package]
+name = "azap_core"
+workspace.version = true
+workspace.edition = true
+
+[dependencies]
