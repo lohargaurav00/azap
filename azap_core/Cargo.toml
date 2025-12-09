@@ -1,6 +1,7 @@
 [package]
 name = "azap_core"
-workspace.version = true
-workspace.edition = true
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
+azap_macros = { path = "../azap_macros" }

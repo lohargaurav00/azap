@@ -1,14 +1,18 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+/// Route Metadata storing
+#[derive(Debug, Clone, Copy)]
+pub struct RouteMetaData {
+    pub method: &'static str,
+    pub path: &'static str,
+    pub handler_name: &'static str,
+    pub module: &'static str,
+    pub file: &'static str,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use std::str;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub use azap_macros::{delete, get, patch, post, put};
+
+pub mod prelude {
+    pub use crate::RouteMetaData;
+    pub use azap_macros::{delete, get, patch, post, put};
 }

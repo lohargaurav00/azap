@@ -1,0 +1,8 @@
+[package]
+name = 'example_basics'
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+azap_core = { path = "../../azap_core" }
+tokio.workspace = true
