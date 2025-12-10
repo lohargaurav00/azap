@@ -1,5 +1,5 @@
 [workspace]
-members = ["azap_core", "azap_macros", "examples/basic"]
+members = ["azap", "azap_macros", "examples/basic"]
 resolver = "3"
 
 [workspace.package]

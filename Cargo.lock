@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "azap_core"
+name = "azap"
 version = "0.1.0"
 dependencies = [
  "azap_macros",
@@ -40,7 +40,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 name = "example_basics"
 version = "0.1.0"
 dependencies = [
- "azap_core",
+ "azap",
  "tokio",
 ]
 

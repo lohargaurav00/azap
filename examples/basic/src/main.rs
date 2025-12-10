@@ -1,4 +1,4 @@
-use azap_core::prelude::*;
+use azap::prelude::*;
 
 #[get("/health")]
 async fn health() -> &'static str {

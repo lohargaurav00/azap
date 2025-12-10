@@ -1,5 +1,5 @@
 [package]
-name = "azap_core"
+name = "azap"
 version.workspace = true
 edition.workspace = true
 

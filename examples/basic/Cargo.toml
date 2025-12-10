@@ -4,5 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-azap_core = { path = "../../azap_core" }
+azap = { path = "../../azap" }
 tokio.workspace = true

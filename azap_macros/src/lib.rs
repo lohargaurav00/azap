@@ -56,7 +56,7 @@ fn route_macro(method: &str, attr: TokenStream, input: TokenStream) -> TokenStre
 
         #[doc(hidden)]
         #[allow(non_upper_case_globals)]
-        pub const #metadata_const: azap_core::RouteMetaData = azap_core::RouteMetaData {
+        pub const #metadata_const: azap::RouteMetaData = azap::RouteMetaData {
             method: #method,
             path: #path,
             handler_name: stringify!(#fn_name),
