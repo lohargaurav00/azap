@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 azap_macros = { path = "../azap_macros" }
+axum.workspace = true

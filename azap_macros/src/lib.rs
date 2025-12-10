@@ -31,9 +31,6 @@ fn route_macro(method: &str, attr: TokenStream, input: TokenStream) -> TokenStre
     let input_fn = parse_macro_input!(input as ItemFn);
     let path = parse_macro_input!(attr as LitStr);
 
-    // dbg! must take an expression, not a printf-style string
-    // dbg!((&input_fn, &path));
-
     let fn_name = &input_fn.sig.ident;
     let fn_vis = &input_fn.vis;
     let fn_sig = &input_fn.sig;

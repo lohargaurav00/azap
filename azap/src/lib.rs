@@ -1,3 +1,13 @@
+pub use axum;
+
+pub mod prelude;
+pub use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Json, Response},
+    Router,
+};
+
 /// Route Metadata storing
 #[derive(Debug, Clone, Copy)]
 pub struct RouteMetaData {
@@ -8,11 +18,4 @@ pub struct RouteMetaData {
     pub file: &'static str,
 }
 
-use std::str;
-
 pub use azap_macros::{delete, get, patch, post, put};
-
-pub mod prelude {
-    pub use crate::RouteMetaData;
-    pub use azap_macros::{delete, get, patch, post, put};
-}
