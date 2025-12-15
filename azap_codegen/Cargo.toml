@@ -1,0 +1,8 @@
+[package]
+name = "azap_codegen"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+syn.workspace = true
+walkdir.workspace = true
