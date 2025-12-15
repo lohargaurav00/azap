@@ -2,8 +2,8 @@
 
 use azap::post;
 
-#[post("/")]
-async fn login() -> &'static str {
+#[post("/login")]
+pub async fn login() -> &'static str {
     // Simple and direct
     "login"
 }
