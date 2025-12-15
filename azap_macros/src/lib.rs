@@ -37,6 +37,42 @@ fn route_macro(method: &str, attr: TokenStream, input: TokenStream) -> TokenStre
     let fn_block = &input_fn.block;
     let fn_attrs = &input_fn.attrs;
 
+    if fn_sig.asyncness.is_none() {
+        return syn::Error::new_spanned(
+            &fn_sig.fn_token,
+            format!(
+                "Route handler '{}' must be async.\n\
+                Help: Add 'async' keyword before 'fn':\n\
+                #[{}(\"{}\")]\n\
+                pub async fn {}(...) {{ ... }}",
+                fn_name,
+                method,
+                path.value(),
+                fn_name
+            ),
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    if !matches!(fn_vis, syn::Visibility::Public(_)) {
+        return syn::Error::new_spanned(
+            &fn_sig.fn_token,
+            format!(
+                "Route handler '{}' must be public.\n\
+                Help: Add 'pub' keyword:\n\
+                #[{}(\"{}\")]\n\
+                pub async fn {}(...) {{ ... }}",
+                fn_name,
+                method,
+                path.value(),
+                fn_name
+            ),
+        )
+        .to_compile_error()
+        .into();
+    }
+
     let method_upper = method.to_uppercase();
     let metadata_const = quote::format_ident!(
         "__AZAP_ROUTE_{}_{}",

@@ -5,6 +5,6 @@ pub mod health;
 pub mod users;
 
 #[get("/")]
-pub fn root_fn() -> &'static str {
+pub async fn root_fn() -> &'static str {
     "root_fn"
 }
