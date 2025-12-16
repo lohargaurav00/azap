@@ -6,7 +6,10 @@ edition.workspace = true
 [dependencies]
 azap = { path = "../../azap" }
 tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 
 [build-dependencies]
 azap_codegen = { path = "../../azap_codegen"}
+

@@ -1,14 +1,17 @@
-// routes/users/create.rs
-use azap::post;
+use azap::prelude::*;
+use serde::Deserialize;
 
-#[post("/")]
-pub async fn create_user() -> &'static str {
-    // Implementation
-    "create_user"
+#[derive(Deserialize)]
+pub struct CreateUser {
+    name: String,
+    email: String,
 }
 
-#[post("/new-user")]
-pub async fn create_user_new() -> &'static str {
-    // Implementation
-    "create_user_new_user"
+#[post("/")]
+pub async fn create_user(Json(payload): Json<CreateUser>) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "id": 123,
+        "name": payload.name,
+        "email": payload.email
+    }))
 }
