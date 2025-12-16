@@ -94,7 +94,9 @@ fn route_macro(method: &str, attr: TokenStream, input: TokenStream) -> TokenStre
             path: #path,
             handler_name: stringify!(#fn_name),
             module: module_path!(),
-            file: file!()
+            file: file!(),
+            line: line!(),
+            column: column!()
         };
     };
 

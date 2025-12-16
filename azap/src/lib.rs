@@ -16,6 +16,8 @@ pub struct RouteMetaData {
     pub handler_name: &'static str,
     pub module: &'static str,
     pub file: &'static str,
+    pub line: u32,
+    pub column: u32,
 }
 
 pub use azap_macros::{delete, get, patch, post, put};
