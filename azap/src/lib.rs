@@ -1,11 +1,10 @@
-pub use axum;
-
 pub mod prelude;
 pub use axum::{
+    self,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Json, Response},
-    Router,
+    serve, Router,
 };
 
 /// Route Metadata storing

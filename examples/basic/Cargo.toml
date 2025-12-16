@@ -5,7 +5,6 @@ edition.workspace = true
 
 [dependencies]
 azap = { path = "../../azap" }
-axum.workspace = true
 tokio.workspace = true
 
 

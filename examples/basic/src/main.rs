@@ -24,6 +24,5 @@ async fn main() {
     println!("  GET  http://127.0.0.1:3000/users/123");
     println!("  POST http://127.0.0.1:3000/users");
 
-    axum::serve(listener, app).await.unwrap();
+    azap::serve(listener, app).await.unwrap();
 }
-
