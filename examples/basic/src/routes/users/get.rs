@@ -10,11 +10,10 @@ pub async fn list_users() -> Json<serde_json::Value> {
     }))
 }
 
-#[get("/:id")]
+#[get("/{id}")]
 pub async fn get_user(Path(id): Path<u32>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": id,
         "name": "User Name"
     }))
 }
-
