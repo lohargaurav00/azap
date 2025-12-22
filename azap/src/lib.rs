@@ -19,4 +19,4 @@ pub struct RouteMetaData {
     pub column: u32,
 }
 
-pub use azap_macros::{delete, get, patch, post, put};
+pub use azap_macros::{delete, get, guards, patch, post, put, register_guard};

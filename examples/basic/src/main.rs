@@ -1,3 +1,4 @@
+mod guards;
 mod routes;
 
 // Include the auto-generated router code
