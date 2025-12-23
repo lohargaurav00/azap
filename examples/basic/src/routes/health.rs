@@ -2,7 +2,7 @@
 use azap::{get, guards};
 
 #[get("/")]
-#[guards(auth, rate_limit(100, 5))]
+#[guards(auth)]
 pub async fn health_check() -> &'static str {
     "OK"
 }
