@@ -4,9 +4,13 @@ use std::{
 };
 use walkdir::WalkDir;
 
+use crate::gaurds::parser::GuardStore;
+
+pub(crate) mod gaurds;
 pub(crate) mod router;
 
 const ROUTE_BASE_DIR: &'static str = "routes";
+const GUARD_BASE_DIR: &'static str = "guards";
 
 #[derive(Debug, Clone)]
 pub(crate) struct DiscoveredRoute {
@@ -28,7 +32,10 @@ macro_rules!  debug_log {
 
 pub fn generate() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
-    let routes_dir = PathBuf::from(&manifest_dir).join("src/routes");
+    let routes_dir = PathBuf::from(&manifest_dir)
+        .join("src")
+        .join(ROUTE_BASE_DIR);
+    let guards_dir = PathBuf::from(manifest_dir).join("src").join(GUARD_BASE_DIR);
 
     debug_log!("Found routes dir at {}", routes_dir.display());
 
@@ -38,6 +45,9 @@ pub fn generate() {
     }
 
     let routes = discover_routes(&routes_dir);
+    if let Ok(guards) = GuardStore::new(&guards_dir) {
+        debug_log!("{:?}", guards);
+    }
 
     debug_log!("Found routes : {}", &routes.len());
 
