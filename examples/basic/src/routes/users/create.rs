@@ -1,4 +1,4 @@
-use azap::prelude::*;
+use azap::{guards, prelude::*};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -8,6 +8,7 @@ pub struct CreateUser {
 }
 
 #[post("/")]
+#[guards(auth)]
 pub async fn create_user(Json(payload): Json<CreateUser>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": 123,

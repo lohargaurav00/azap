@@ -2,9 +2,8 @@ use anyhow::{bail, Result};
 use std::{
     collections::HashMap,
     ffi::OsStr,
-    fmt::{self, Display},
-    fs,
-    path::{Component, Path, PathBuf},
+    fmt, fs,
+    path::{Component, Path},
     str::FromStr,
 };
 use syn::{
@@ -13,7 +12,7 @@ use syn::{
 };
 use walkdir::WalkDir;
 
-use crate::{debug_log, gaurds, GUARD_BASE_DIR};
+use crate::{debug_log, GUARD_BASE_DIR};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum GuardType {
@@ -31,6 +30,7 @@ impl GuardType {
         }
     }
 
+    #[allow(dead_code)]
     pub fn parse(s: &str) -> syn::Result<Self> {
         s.parse().map_err(|_| {
             syn::Error::new(
@@ -107,16 +107,8 @@ impl fmt::Display for GuardType {
 pub struct ModulePath(String);
 
 impl ModulePath {
-    pub fn construct(path: &Path, module: &str) -> Result<Self, syn::Error> {
-        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| {
-            syn::Error::new(proc_macro2::Span::call_site(), "CARGO_MANIFEST_DIR not set")
-        })?;
-
-        let guards_dir = PathBuf::from(manifest_dir).join("src").join(GUARD_BASE_DIR);
-
-        debug_log!("{}, {}", path.display(), &guards_dir.display());
-
-        let relative = path.strip_prefix(&guards_dir).map_err(|_| {
+    pub fn construct(path: &Path, base_dir: &Path, module: &str) -> Result<Self, syn::Error> {
+        let relative = path.strip_prefix(&base_dir).map_err(|_| {
             syn::Error::new_spanned(
                 path.display().to_string(),
                 "path must be under guards directory",
@@ -162,20 +154,47 @@ pub struct Guard {
     pub guard_type: GuardType,
 }
 
+impl Guard {
+    pub fn extract_from_attr(
+        attr: &syn::Attribute,
+        guard_store: &GuardStore,
+    ) -> Result<Vec<Guard>> {
+        let mut guards = Vec::new();
+
+        let args = attr.parse_args_with(
+            syn::punctuated::Punctuated::<syn::Ident, syn::Token![,]>::parse_terminated,
+        )?;
+
+        for ident in args {
+            let name = ident.to_string();
+
+            if let Some(guard) = guard_store.get(&name) {
+                guards.push(guard.clone());
+            } else {
+                debug_log!("{} guard NotFound", &name);
+            }
+        }
+
+        Ok(guards)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct GuardStore(HashMap<String, Guard>);
 
 impl GuardStore {
-    pub fn new(path: &PathBuf) -> Result<Self> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn discover_guards(&mut self, path: &Path) -> Result<()> {
         if !path.exists() {
             bail!("{} dir doesn't exist — skipping guards", path.display());
         }
 
-        let mut guards: HashMap<String, Guard> = HashMap::new();
-
         for entry in WalkDir::new(path)
             .into_iter()
-            .filter_map(|e| e.ok())
+            .filter_map(Result::ok)
             .filter(|entry| {
                 let path = entry.path();
                 path.is_file()
@@ -191,7 +210,8 @@ impl GuardStore {
                     let guard_type = GuardType::parse_from_attrs(&func.attrs)?;
 
                     let fn_name = func.sig.ident.clone();
-                    let module_path = ModulePath::construct(entry.path(), &fn_name.to_string())?;
+                    let module_path =
+                        ModulePath::construct(entry.path(), path, &fn_name.to_string())?;
 
                     let guard = Guard {
                         name: fn_name.clone(),
@@ -199,25 +219,44 @@ impl GuardStore {
                         guard_type,
                     };
 
-                    guards.insert(fn_name.to_string(), guard);
+                    self.0.insert(fn_name.to_string(), guard);
                 }
             }
         }
 
-        Ok(GuardStore(guards))
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn exists(&self, guard: &str) -> bool {
+        self.0.contains_key(guard)
+    }
+
+    pub fn get(&self, guard: &str) -> Option<&Guard> {
+        self.0.get(guard)
+    }
+}
+
+impl Default for GuardStore {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::GUARD_BASE_DIR;
 
     #[test]
     fn test_guard_store() -> Result<()> {
-        let gaurd_dir = PathBuf::from("/home/gauravlohar/personal/azap/examples/basic/src")
+        let guard_dir = PathBuf::from("/home/gauravlohar/personal/azap/examples/basic/src")
             .join(GUARD_BASE_DIR);
-        let guards = GuardStore::new(&gaurd_dir)?;
+        let mut guards = GuardStore::new();
+        guards.discover_guards(&guard_dir)?;
+
         dbg!(guards);
         assert_eq!(1, 1);
         Ok(())

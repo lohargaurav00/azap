@@ -3,6 +3,7 @@ pub use axum::{
     self,
     extract::{Path, Query, State},
     http::StatusCode,
+    middleware,
     response::{IntoResponse, Json, Response},
     serve, Router,
 };

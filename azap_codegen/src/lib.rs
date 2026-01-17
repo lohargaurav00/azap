@@ -4,7 +4,7 @@ use std::{
 };
 use walkdir::WalkDir;
 
-use crate::gaurds::parser::GuardStore;
+use crate::gaurds::parser::{Guard, GuardStore};
 
 pub(crate) mod gaurds;
 pub(crate) mod router;
@@ -18,6 +18,7 @@ pub(crate) struct DiscoveredRoute {
     pub path: String,
     pub handler: String,
     pub module_path: String,
+    pub guards: Vec<Guard>,
 }
 
 #[macro_export]
@@ -36,6 +37,11 @@ pub fn generate() {
         .join("src")
         .join(ROUTE_BASE_DIR);
     let guards_dir = PathBuf::from(manifest_dir).join("src").join(GUARD_BASE_DIR);
+    let mut guard_store = GuardStore::new();
+
+    if let Err(err) = guard_store.discover_guards(&guards_dir) {
+        debug_log!("Error while discovering guards : {}", err);
+    }
 
     debug_log!("Found routes dir at {}", routes_dir.display());
 
@@ -44,10 +50,7 @@ pub fn generate() {
         return;
     }
 
-    let routes = discover_routes(&routes_dir);
-    if let Ok(guards) = GuardStore::new(&guards_dir) {
-        debug_log!("{:?}", guards);
-    }
+    let routes = discover_routes(&routes_dir, &guard_store);
 
     debug_log!("Found routes : {}", &routes.len());
 
@@ -64,7 +67,7 @@ pub fn generate() {
     println!("cargo::rerun-if-changed=src/routes")
 }
 
-fn discover_routes(route: &PathBuf) -> Vec<DiscoveredRoute> {
+fn discover_routes(route: &PathBuf, guard_store: &GuardStore) -> Vec<DiscoveredRoute> {
     dbg!(&route);
 
     let mut routes: Vec<DiscoveredRoute> = Vec::new();
@@ -82,7 +85,7 @@ fn discover_routes(route: &PathBuf) -> Vec<DiscoveredRoute> {
             continue;
         }
 
-        if let Ok(file_routes) = parse_route_file(path, route) {
+        if let Ok(file_routes) = parse_route_file(path, route, guard_store) {
             routes.extend(file_routes);
         }
     }
@@ -93,6 +96,7 @@ fn discover_routes(route: &PathBuf) -> Vec<DiscoveredRoute> {
 fn parse_route_file(
     file_path: &Path,
     route_base: &Path,
+    guard_store: &GuardStore,
 ) -> Result<Vec<DiscoveredRoute>, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(file_path)?;
     let syn_tree = syn::parse_file(&content)?;
@@ -103,7 +107,7 @@ fn parse_route_file(
         if let syn::Item::Fn(func) = item {
             let module_path = calculate_module_path(file_path, route_base, Some(ROUTE_BASE_DIR));
 
-            if let Some(route) = extract_route_from_func(&func, &module_path) {
+            if let Some(route) = extract_route_from_func(&func, &module_path, guard_store) {
                 routes.push(route);
             }
         }
@@ -112,25 +116,42 @@ fn parse_route_file(
     Ok(routes)
 }
 
-fn extract_route_from_func(func: &syn::ItemFn, module_path: &str) -> Option<DiscoveredRoute> {
+fn extract_route_from_func(
+    func: &syn::ItemFn,
+    module_path: &str,
+    guard_store: &GuardStore,
+) -> Option<DiscoveredRoute> {
+    let mut method = None;
+    let mut path = None;
+    let mut guards: Vec<Guard> = Vec::new();
+
     for attr in &func.attrs {
-        let method = attr.path().get_ident()?.to_string();
+        let ident = match attr.path().get_ident() {
+            Some(i) => i.to_string(),
+            None => continue,
+        };
 
-        if !["get", "post", "put", "patch", "delete"].contains(&method.as_str()) {
-            continue;
+        match ident.as_str() {
+            "get" | "post" | "put" | "patch" | "delete" => {
+                method = Some(ident);
+                path = Some(extract_path_from_attr(attr)?);
+            }
+            "guards" => {
+                if let Ok(ext_guards) = Guard::extract_from_attr(attr, guard_store) {
+                    guards.extend(ext_guards);
+                }
+            }
+            _ => {}
         }
-
-        let path = extract_path_from_attr(attr)?;
-
-        return Some(DiscoveredRoute {
-            method: method,
-            path: path,
-            handler: func.sig.ident.to_string(),
-            module_path: module_path.to_string(),
-        });
     }
 
-    None
+    Some(DiscoveredRoute {
+        method: method?,
+        path: path?,
+        handler: func.sig.ident.to_string(),
+        module_path: module_path.to_string(),
+        guards,
+    })
 }
 
 /// Extracts the inner path/value from a `#[attribute("...")]`.
@@ -241,8 +262,18 @@ mod tests {
 
     #[test]
     fn test_discover_routes() {
-        let path = PathBuf::from("/home/gauravlohar/personal/azap/examples/basic/src/routes");
-        let _ = discover_routes(&path);
+        let path = PathBuf::from("/home/gauravlohar/personal/azap/examples/basic/src")
+            .join(ROUTE_BASE_DIR);
+        let guard_path = PathBuf::from("/home/gauravlohar/personal/azap/examples/basic/src")
+            .join(GUARD_BASE_DIR);
+
+        let mut guard_store = GuardStore::new();
+
+        if let Err(err) = guard_store.discover_guards(&guard_path) {
+            debug_log!("Error while discovering guards : {}", err);
+        }
+
+        let _ = discover_routes(&path, &guard_store);
         assert_eq!(1, 1);
     }
 
