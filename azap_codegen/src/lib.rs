@@ -4,7 +4,10 @@ use std::{
 };
 use walkdir::WalkDir;
 
-use crate::gaurds::parser::{Guard, GuardStore};
+use crate::{
+    gaurds::parser::{Guard, GuardStore},
+    router::Router,
+};
 
 pub(crate) mod gaurds;
 pub(crate) mod router;
@@ -54,14 +57,16 @@ pub fn generate() {
 
     debug_log!("Found routes : {}", &routes.len());
 
-    let code = router::generate_router(&routes);
+    let mut code = Router::new();
+
+    code.generate(&routes);
 
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR not set");
     let dest_path = PathBuf::from(out_dir).join("generated_routes.rs");
 
     debug_log!("Generated Routes Destination : {}", dest_path.display());
 
-    fs::write(&dest_path, code).expect("Failed to write generate routes");
+    fs::write(&dest_path, code.0).expect("Failed to write generate routes");
 
     // Tell Cargo to rerun if routes change
     println!("cargo::rerun-if-changed=src/routes")

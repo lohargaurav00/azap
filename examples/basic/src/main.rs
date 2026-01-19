@@ -4,12 +4,16 @@ mod routes;
 // Include the auto-generated router code
 include!(concat!(env!("OUT_DIR"), "/generated_routes.rs"));
 
+#[derive(Debug, Clone)]
+pub struct AppState {
+    name: &'static str,
+}
+
 #[tokio::main]
 async fn main() {
-    // Initialize logging
-
-    // Use the generated register_routes() function
-    let app = register_routes();
+    let state = AppState { name: "Azap" };
+    // Build app using generated router (state-aware)
+    let app = register_routes(state);
 
     // Start server
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
