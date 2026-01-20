@@ -8,7 +8,7 @@ pub struct CreateUser {
 }
 
 #[post("/")]
-#[guards(auth)]
+#[guards(auth, tracing)]
 pub async fn create_user(Json(payload): Json<CreateUser>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": 123,

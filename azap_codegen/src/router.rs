@@ -1,7 +1,7 @@
 // src/router.rs
 use std::collections::HashMap;
 
-use crate::DiscoveredRoute;
+use crate::{gaurds::parser::GuardType, DiscoveredRoute};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Router(pub String);
@@ -25,45 +25,75 @@ impl Router {
         // Function signature
         code.push_str(
             "pub fn register_routes(state: AppState) -> Router\n\
-             {\n",
+         {\n",
         );
 
-        // ✅ Build router step by step with proper typing
-        code.push_str("    Router::new()\n");
+        // Group routes by their unique middleware combination
+        let mut route_groups: HashMap<String, Vec<&DiscoveredRoute>> = HashMap::new();
 
-        let mut routes_by_base: HashMap<String, Vec<&DiscoveredRoute>> = HashMap::new();
         for route in routes {
-            let base_path = extract_base_path(&route.module_path);
-            routes_by_base.entry(base_path).or_default().push(route);
+            // Create a unique key based on the route's guards
+            let guard_key = route
+                .guards
+                .iter()
+                .map(|g| format!("{}:{}", &g.guard_type, &g.module_path))
+                .collect::<Vec<_>>()
+                .join("|");
+
+            route_groups.entry(guard_key).or_default().push(route);
         }
 
-        let mut sorted_bases: Vec<_> = routes_by_base.keys().collect();
-        sorted_bases.sort();
+        code.push_str("    let mut router = Router::new();\n\n");
 
-        for base in sorted_bases {
-            let routes = &routes_by_base[base];
-            code.push_str(&format!("        // Routes for {}\n", base));
+        // Generate a separate sub-router for each middleware combination
+        for (guard_key, group_routes) in route_groups {
+            if group_routes.is_empty() {
+                continue;
+            }
 
-            for route in routes {
-                let full_path = combine_paths(base, &route.path);
+            code.push_str("    // Group with middleware: ");
+            if guard_key.is_empty() {
+                code.push_str("none\n");
+            } else {
+                code.push_str(&format!("{}\n", guard_key.replace('|', ", ")));
+            }
+
+            code.push_str("    let group = Router::new()\n");
+
+            // Add all routes in this group
+            for route in &group_routes {
+                let base_path = extract_base_path(&route.module_path);
+                let full_path = combine_paths(&base_path, &route.path);
                 let handler_path = format!("crate::{}::{}", route.module_path, route.handler);
 
                 code.push_str(&format!(
                     "        .route(\"{}\", {}({}))\n",
                     full_path, route.method, handler_path
                 ));
+            }
 
-                for guard in &route.guards {
-                    code.push_str(&format!(
+            // Apply middleware layers for this group
+            if !group_routes[0].guards.is_empty() {
+                for guard in &group_routes[0].guards {
+                    match guard.guard_type {
+                    GuardType::FromFn => code.push_str(&format!(
                         "        .layer(middleware::from_fn(crate::{}))\n",
                         guard.module_path
-                    ));
+                    )),
+                    GuardType::FromFnWithState => code.push_str(&format!(
+                        "        .layer(middleware::from_fn_with_state(state.clone(), crate::{}))\n",
+                        guard.module_path
+                    )),
+                    _ => (),
+                }
                 }
             }
+
+            code.push_str("    ;\n");
+            code.push_str("    router = router.merge(group);\n\n");
         }
 
-        // ✅ State applied last
-        code.push_str("        .with_state(state)\n");
+        code.push_str("    router.with_state(state)\n");
         code.push_str("}\n");
     }
 }
